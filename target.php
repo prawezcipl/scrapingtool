@@ -1,5 +1,6 @@
 <?php
 
+header('Content-type: application/json');
 /**
  * This class will handling all scrapping functionality using Google place API
  * @author		Md Prawez Musharraf
@@ -55,14 +56,14 @@ class doscraping {
 	public function searchAddress () {
 		#call map api
 		$googleApiKey = "AIzaSyAvBdVS06WCli7X2RmDbti-tU2M7oAMdA8";
-		$keyword = urlencode($this->businessName . ', ' . $this->address);
+		$keyword = urlencode($this->businessName . ', ' . $this->address);		
 		
 		#get latitude and longitude of an address
-		$strUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=".urlencode($keyword)."&sensor=false";
+		$strUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=".$keyword."&sensor=false";
 		$resultLatLong 		= file_get_contents($strUrl);
 		$arrResultLatLon = json_decode($resultLatLong, true);
 		
-		if (!empty($arrResultLatLon)) {
+		if (!empty($arrResultLatLon['results'][0]['geometry'])) {
 			$latitude = $arrResultLatLon['results'][0]['geometry']['location']['lat'];
 			$longitude = $arrResultLatLon['results'][0]['geometry']['location']['lng'];
                         
@@ -72,7 +73,7 @@ class doscraping {
 			$arrResultFindPlace = json_decode($resultFindPlace, true);
                         
 			#get place details from place ID using Google API
-			if (!empty($arrResultFindPlace)) {
+			if (!empty($arrResultFindPlace['results'])) {
                             
                                 $response       = array();
                                 $responseResult = array();

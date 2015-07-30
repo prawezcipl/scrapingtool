@@ -46,7 +46,7 @@
                         </div>
                     </div>
                 </form>
-                
+                <div id="loader"></div>
                 <div id="result">
                     <div id="errormsg"></div>
                     <div id="bname"></div>
@@ -95,6 +95,8 @@ $(document).ready(function() {
         }
     })
     .on('success.form.fv', function(e) {
+            $("#loader").show(); 
+            $("#result").hide();
             // Prevent form submission
             e.preventDefault();
 
@@ -106,7 +108,12 @@ $(document).ready(function() {
 
             // Use Ajax to submit form data
             $.post($form.attr('action'), $form.serialize(), function(result) { 
-                $("#result").show(); 
+                $("#loader").hide(); 
+                $("#result").show();
+                $("#bname").empty();
+                $("#add").empty();
+                $("#pnum").empty();
+                $("#errormsg").empty();
                 if(result.errorMsg){
                    $("#errormsg").html(result.errorMsg);  
                 }
@@ -133,6 +140,14 @@ $(document).ready(function() {
     #add{
        margin-bottom: 5px;
     }
+    #loader {
+        background-image: url("dist/img/loading.gif");
+        height: 100px;
+        margin-left: 28%;
+        position: absolute;
+        width: 100px;
+        display:none;
+}
 </style>
 </body>
 </html>
