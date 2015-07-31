@@ -63,68 +63,77 @@ class doscraping {
 		$resultLatLong 		= file_get_contents($strUrl);
 		$arrResultLatLon = json_decode($resultLatLong, true);
 		
-		if (!empty($arrResultLatLon['results'][0]['geometry'])) {
-			$latitude = $arrResultLatLon['results'][0]['geometry']['location']['lat'];
-			$longitude = $arrResultLatLon['results'][0]['geometry']['location']['lng'];
+		if (!empty($arrResultLatLon)) {                 
+
+                    $latitude = $arrResultLatLon['results'][0]['geometry']['location']['lat'];
+                    $longitude = $arrResultLatLon['results'][0]['geometry']['location']['lng'];
+
+                    #get place of an business with latilude and longitude using Google API
+                    $strFindPlaceUrl 	= "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=".$latitude.",".$longitude."&radius=50000&keyword=".urlencode($this->businessName)."&key=" . $googleApiKey;
+                    $resultFindPlace 	= file_get_contents($strFindPlaceUrl);			
+                    $arrResultFindPlace = json_decode($resultFindPlace, true);
+
+                    #get place details from place ID using Google API
+                    if (!empty($arrResultFindPlace['results'])) {
                         
-			#get place of an business with latilude and longitude using Google API
-			$strFindPlaceUrl 	= "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=".$latitude.",".$longitude."&radius=50000&keyword=".urlencode($this->businessName)."&key=" . $googleApiKey;
-			$resultFindPlace 	= file_get_contents($strFindPlaceUrl);			
-			$arrResultFindPlace = json_decode($resultFindPlace, true);
+                        #initialize variables
+                        $intCounter     = 0;
+                        $response       = array();
+                        $responseResult = array();
                         
-			#get place details from place ID using Google API
-			if (!empty($arrResultFindPlace['results'])) {
-                            
-                                $response       = array();
-                                $responseResult = array();
-                                foreach ($arrResultFindPlace['results'] as $singleResultFindPlace) {
-                                        
-                                        $strPlaceId = $singleResultFindPlace['place_id'];
-				
-                                        $strFindPlaceDetail 		= "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$strPlaceId."&key=".$googleApiKey;
-                                        $resultFindPlaceDetail 		= file_get_contents($strFindPlaceDetail);			
-                                        $arrResultFindPlaceDetail 	= json_decode($resultFindPlaceDetail, true);
-                                        
-                                        $returnAddress      = $arrResultFindPlaceDetail['result']['formatted_address'];
-                                        $returnPhoneNumber  = $arrResultFindPlaceDetail['result']['formatted_phone_number'];
-                                        $returnBusinessName = $arrResultFindPlaceDetail['result']['name'];
-                                        # return response in json array                                        
-                                        if($this->stringMatching(strtolower($returnBusinessName),strtolower($this->businessName))){
-                                            $response['businessName']['value'] = $returnBusinessName;
-                                            $response['businessName']['msg'] = 'accurate';
-                                        }else{
-                                            $response['businessName']['value'] = $returnBusinessName;
-                                            $response['businessName']['msg'] = 'different';
-                                        }
-                                        if($this->stringMatching(strtolower($returnAddress),strtolower($this->address))){
-                                            $response['address']['value'] = $returnAddress;
-                                            $response['address']['msg'] = 'accurate';
-                                        }else{
-                                            $response['address']['value'] = $returnAddress;
-                                            $response['address']['msg'] = 'different';
-                                        }
-                                        if(strtolower($returnPhoneNumber) == strtolower($this->phoneNo)){
-                                            $response['phoneNumber']['value'] = $returnPhoneNumber;
-                                            $response['phoneNumber']['msg'] = 'accurate';
-                                        }else{
-                                            $response['phoneNumber']['value'] = $returnPhoneNumber;
-                                            $response['phoneNumber']['msg'] = 'different';
-                                        }
-                                        $responseResult[] = $response;
-                                        
-                                       echo json_encode($responseResult);
-                                }				
-                               
-                        }else{
-                            echo json_encode(array(
-                                        'errorMsg' => 'Result Not Found',                                        
-                                    ));
+                        foreach ($arrResultFindPlace['results'] as $singleResultFindPlace) {                                
+                            #break after 10 result
+                            if($intCounter == 10) break;
+
+                                $strPlaceId = $singleResultFindPlace['place_id'];
+
+                                $strFindPlaceDetail 		= "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$strPlaceId."&key=".$googleApiKey;
+                                $resultFindPlaceDetail 		= file_get_contents($strFindPlaceDetail);			
+                                $arrResultFindPlaceDetail 	= json_decode($resultFindPlaceDetail, true);
+                                
+                                $returnAddress      = $arrResultFindPlaceDetail['result']['formatted_address'];
+                                $returnPhoneNumber  = $arrResultFindPlaceDetail['result']['formatted_phone_number'];
+                                $returnBusinessName = $arrResultFindPlaceDetail['result']['name'];
+                                
+                                # return response in json array                                        
+                                if($this->stringMatching(strtolower($returnBusinessName),strtolower($this->businessName))){
+                                    $strBusinessMsg = 'accurate';
+                                }else{
+                                    $strBusinessMsg = 'different';
+                                }
+                                if($this->stringMatching(strtolower($returnAddress),strtolower($this->address))){
+                                    $strAddressMsg = 'accurate';
+                                }else{
+                                    $strAddressMsg = 'different';
+                                }
+                                if(strtolower($returnPhoneNumber) == strtolower($this->phoneNo)){
+                                    $strPhoneMsg = 'accurate';
+                                }else{
+                                    $strPhoneMsg = 'different';
+                                }
+                                
+                                $strHTML .= '
+                                        <div id="bname">Business Name: '.$returnBusinessName.' ('.$strBusinessMsg.')</div>
+                                        <div id="add">Address: '.$returnAddress.' ('.$strAddressMsg.')</div>
+                                        <div id="pnum">Phone Number: '.$returnPhoneNumber.' ('.$strPhoneMsg.')</div><br />
+                                ';                               
+                                
+                                #increment counter
+                                $intCounter++;
                         }
-			
+                        
+                        $arrHTML = array('HTML' => $strHTML);
+                        echo json_encode($arrHTML); exit;
+
+                    }else{
+                        echo json_encode(array(
+                                    'errorMsg' => 'Result Not Found',                                        
+                                )); exit;
+                    }
                 }else{
                     echo json_encode(array(
                                         'errorMsg' => 'Result Not Found',                                        
-                                    ));
+                                    )); exit;
                 }
 	}
 }

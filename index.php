@@ -49,9 +49,12 @@
                 <div id="loader"></div>
                 <div id="result">
                     <div id="errormsg"></div>
+                    <div id="resultHTML"></div>
+                    <!-- 
                     <div id="bname"></div>
                     <div id="add"></div>
                     <div id="pnum"></div>
+                    -->
                 </div>
             </div>
         </div>
@@ -110,17 +113,13 @@ $(document).ready(function() {
             $.post($form.attr('action'), $form.serialize(), function(result) { 
                 $("#loader").hide(); 
                 $("#result").show();
-                $("#bname").empty();
-                $("#add").empty();
-                $("#pnum").empty();
                 $("#errormsg").empty();
+                $("#resultHTML").empty();
                 if(result.errorMsg){
                    $("#errormsg").html(result.errorMsg);  
                 }
                 else{
-                $("#bname").html("Business Name: " + result[0].businessName.value + " (" + result[0].businessName.msg + ")");
-                $("#add").html("Address: " + result[0].address.value + " (" + result[0].address.msg + ")");
-                $("#pnum").html("Phone Number: " + result[0].phoneNumber.value + " (" + result[0].phoneNumber.msg + ")");
+                    $("#resultHTML").html(result.HTML);
                 }
             }, 'json');
         });
