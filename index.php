@@ -32,6 +32,27 @@
                             <input type="text" class="form-control" name="address" id="address" placeholder="Address" />
                         </div>
                     </div>
+					
+					<div class="form-group">
+                        <label class="col-sm-3 control-label">City</label>
+                        <div class="col-sm-5">
+                            <input type="text" class="form-control" name="city" id="city" placeholder="City" />
+                        </div>
+                    </div>
+					
+					<div class="form-group">
+                        <label class="col-sm-3 control-label">State</label>
+                        <div class="col-sm-5">
+                            <input type="text" class="form-control" name="state" id="state" placeholder="State" />
+                        </div>
+                    </div>
+					
+					<div class="form-group">
+                        <label class="col-sm-3 control-label">Zip</label>
+                        <div class="col-sm-5">
+                            <input type="text" class="form-control" name="zip" id="zip" placeholder="Zip" />
+                        </div>
+                    </div>
 
                     <div class="form-group">
                         <label class="col-sm-3 control-label">Phone No</label>
@@ -84,6 +105,30 @@ $(document).ready(function() {
                 validators: {
                     notEmpty: {
                         message: 'The address is required'
+                    }
+                }
+            },
+			city: {
+                row: '.col-sm-5',
+                validators: {
+                    notEmpty: {
+                        message: 'The city is required'
+                    }
+                }
+            },
+			state: {
+                row: '.col-sm-5',
+                validators: {
+                    notEmpty: {
+                        message: 'The state is required'
+                    }
+                }
+            },
+			zip: {
+                row: '.col-sm-5',
+                validators: {
+                    notEmpty: {
+                        message: 'The zip is required'
                     }
                 }
             },

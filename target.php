@@ -19,11 +19,14 @@ class doscraping {
 	/**
 	 * define constructor
 	 */
-	public function __construct($businessName, $address, $phoneNo) {
-		$this->businessName     =  $businessName; //'Classic Informatics';
-		$this->address 		=  $address; //'K 258/635,636 First Floor, Lane 3,First Floor, Saidulajab, Westend Marg, New Delhi'; 
-		$this->phoneNo 		=  $phoneNo; //'011 4283 1191'; 
-		
+	public function __construct($businessName, $address, $city, $state, $zip, $phoneNo) {
+		$this->businessName = $businessName; //'Classic Informatics';
+		$this->address 		= $address; //'K 258/635,636 First Floor, Lane 3,First Floor, Saidulajab, Westend Marg, New Delhi'; 
+		$this->city			= $city;
+		$this->state		= $state;
+		$this->zip			= $zip;
+		$this->phoneNo 		= $phoneNo; //'011 4283 1191'; 
+				
 		#call search address
 		$this->searchAddress();
 	}
@@ -56,12 +59,12 @@ class doscraping {
 	public function searchAddress () {
 		#call map api
 		$googleApiKey = "AIzaSyAvBdVS06WCli7X2RmDbti-tU2M7oAMdA8";
-		$keyword = urlencode($this->businessName . ', ' . $this->address);		
+		$keyword = urlencode($this->businessName . ', ' . $this->address . ',' . $this->city . ', ' . $this->state . ', ' . $this->zip);		
 		
 		#get latitude and longitude of an address
-		$strUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=".$keyword."&sensor=false";
+		$strUrl 			= "https://maps.googleapis.com/maps/api/geocode/json?address=".$keyword."&sensor=false";
 		$resultLatLong 		= file_get_contents($strUrl);
-		$arrResultLatLon = json_decode($resultLatLong, true);
+		$arrResultLatLon 	= json_decode($resultLatLong, true);
 		
 		if (!empty($arrResultLatLon)) {                 
 
@@ -92,25 +95,59 @@ class doscraping {
                                 $arrResultFindPlaceDetail 	= json_decode($resultFindPlaceDetail, true);
                                 
                                 $returnAddress      = $arrResultFindPlaceDetail['result']['formatted_address'];
+								$returnCity      	= $arrResultFindPlaceDetail['result']['address_components'][0]['long_name'];
+								$returnState      	= $arrResultFindPlaceDetail['result']['address_components'][1]['long_name'];
+								$returnCountry     	= $arrResultFindPlaceDetail['result']['address_components'][2]['long_name'];
+								$returnZip	     	= $arrResultFindPlaceDetail['result']['address_components'][3]['long_name'];								
+								//$returnAddress		= $returnAddress . ', ' . $returnCity . ', ' . $returnState . ', ' . ', ' . $returnZip;								
                                 $returnPhoneNumber  = $arrResultFindPlaceDetail['result']['formatted_phone_number'];
                                 $returnBusinessName = $arrResultFindPlaceDetail['result']['name'];
                                 
                                 # return response in json array                                        
                                 if($this->stringMatching(strtolower($returnBusinessName),strtolower($this->businessName))){
-                                    $strBusinessMsg = 'accurate';
+                                    $intBusinessAccurateCounter = 1;
                                 }else{
-                                    $strBusinessMsg = 'different';
+                                    $intBusinessAccurateCounter = 0;
                                 }
+								
                                 if($this->stringMatching(strtolower($returnAddress),strtolower($this->address))){
-                                    $strAddressMsg = 'accurate';
+                                    $intAddressAccurateCounter = 1;
                                 }else{
-                                    $strAddressMsg = 'different';
+                                    $intAddressNotAccurateCounter = 1;
                                 }
-                                if(strtolower($returnPhoneNumber) == strtolower($this->phoneNo)){
-                                    $strPhoneMsg = 'accurate';
+								
+								if($this->stringMatching(strtolower($returnCity),strtolower($this->city))){
+                                    $intAddressAccurateCounter += 1;
                                 }else{
-                                    $strPhoneMsg = 'different';
+                                    $intAddressNotAccurateCounter += 1;
                                 }
+								
+								if($this->stringMatching(strtolower($returnState),strtolower($this->state))){
+                                    $intAddressAccurateCounter += 1;
+                                }else{
+                                    $intAddressNotAccurateCounter += 1;
+                                }
+								
+								if($this->stringMatching(strtolower($returnZip),strtolower($this->zip))){
+                                    $intAddressAccurateCounter += 1;
+                                }else{
+                                    $intAddressNotAccurateCounter += 1;
+                                }
+								
+                                if($returnPhoneNumber == $this->phoneNo){
+                                    $intPhoneAccurateCounter = 1;
+                                }else{
+                                    $intPhoneAccurateCounter = 0;
+                                }
+								
+								if ($intAddressNotAccurateCounter) $strBusinessMsg = 'Accurate';
+								else $strBusinessMsg = 'Not Accurate';
+								
+								if ($intPhoneAccurateCounter) $strPhoneMsg = 'Accurate';
+								else $strPhoneMsg = 'Not Accurate';
+								
+								if ($intAddressAccurateCounter >= $intAddressNotAccurateCounter) $strAddressMsg = 'Accurate';
+								else $strAddressMsg = 'Not Accurate';
                                 
                                 $strHTML .= '
                                         <div id="bname">Business Name: '.$returnBusinessName.' ('.$strBusinessMsg.')</div>
@@ -140,7 +177,10 @@ class doscraping {
 #getting ajax data
 $businessName = trim($_POST['businessName']);
 $address      = trim($_POST['address']);
+$city		  = trim($_POST['city']); 
+$state		  = trim($_POST['state']); 
+$zip          = trim($_POST['zip']);
 $phoneNumber  = trim($_POST['phoneNo']);
 
 #initialize class 
-$objDoscraping = new doscraping($businessName, $address, $phoneNumber);
+$objDoscraping = new doscraping($businessName, $address, $city, $state, $zip, $phoneNumber);
