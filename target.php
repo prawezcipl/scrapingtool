@@ -87,76 +87,103 @@ class doscraping {
                         foreach ($arrResultFindPlace['results'] as $singleResultFindPlace) {                                
                             #break after 10 result
                             if($intCounter == 10) break;
+							
+							$strPlaceId = $singleResultFindPlace['place_id'];
 
-                                $strPlaceId = $singleResultFindPlace['place_id'];
-
-                                $strFindPlaceDetail 		= "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$strPlaceId."&key=".$googleApiKey;
-                                $resultFindPlaceDetail 		= file_get_contents($strFindPlaceDetail);			
-                                $arrResultFindPlaceDetail 	= json_decode($resultFindPlaceDetail, true);
-                                
-                                $returnAddress      = $arrResultFindPlaceDetail['result']['formatted_address'];
-								$returnCity      	= $arrResultFindPlaceDetail['result']['address_components'][0]['long_name'];
-								$returnState      	= $arrResultFindPlaceDetail['result']['address_components'][1]['long_name'];
-								$returnCountry     	= $arrResultFindPlaceDetail['result']['address_components'][2]['long_name'];
-								$returnZip	     	= $arrResultFindPlaceDetail['result']['address_components'][3]['long_name'];								
-								//$returnAddress		= $returnAddress . ', ' . $returnCity . ', ' . $returnState . ', ' . ', ' . $returnZip;								
-                                $returnPhoneNumber  = $arrResultFindPlaceDetail['result']['formatted_phone_number'];
-                                $returnBusinessName = $arrResultFindPlaceDetail['result']['name'];
-                                
-                                # return response in json array                                        
-                                if($this->stringMatching(strtolower($returnBusinessName),strtolower($this->businessName))){
-                                    $intBusinessAccurateCounter = 1;
-                                }else{
-                                    $intBusinessAccurateCounter = 0;
-                                }
+							$strFindPlaceDetail 		= "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$strPlaceId."&key=".$googleApiKey;
+							$resultFindPlaceDetail 		= file_get_contents($strFindPlaceDetail);			
+							$arrResultFindPlaceDetail 	= json_decode($resultFindPlaceDetail, true);
+							
+							$returnAddress      = $arrResultFindPlaceDetail['result']['formatted_address'];							
+							$returnPhoneNumber  = $arrResultFindPlaceDetail['result']['formatted_phone_number'];
+							$returnBusinessName = $arrResultFindPlaceDetail['result']['name'];
+							
+							# return response in json array                                        
+							if($this->stringMatching(strtolower($returnBusinessName),strtolower($this->businessName))){
+								$intBusinessAccurateCounter = 1;
+							}else{
+								$intBusinessAccurateCounter = 0;
+							}
+							
+							if($this->stringMatching(strtolower($returnAddress),strtolower($this->address))){
+								$intAddressAccurateCounter = 1;
+							}else{
+								$intAddressNotAccurateCounter = 1;
+							}
+							
+							if (!empty($arrResultFindPlaceDetail['result']['address_components'])) {
+								$intCountAddComponent = count($arrResultFindPlaceDetail['result']['address_components']);
 								
-                                if($this->stringMatching(strtolower($returnAddress),strtolower($this->address))){
-                                    $intAddressAccurateCounter = 1;
-                                }else{
-                                    $intAddressNotAccurateCounter = 1;
-                                }
-								
-								if($this->stringMatching(strtolower($returnCity),strtolower($this->city))){
-                                    $intAddressAccurateCounter += 1;
-                                }else{
-                                    $intAddressNotAccurateCounter += 1;
-                                }
-								
-								if($this->stringMatching(strtolower($returnState),strtolower($this->state))){
-                                    $intAddressAccurateCounter += 1;
-                                }else{
-                                    $intAddressNotAccurateCounter += 1;
-                                }
-								
-								if($this->stringMatching(strtolower($returnZip),strtolower($this->zip))){
-                                    $intAddressAccurateCounter += 1;
-                                }else{
-                                    $intAddressNotAccurateCounter += 1;
-                                }
-								
-                                if($returnPhoneNumber == $this->phoneNo){
-                                    $intPhoneAccurateCounter = 1;
-                                }else{
-                                    $intPhoneAccurateCounter = 0;
-                                }
-								
-								if ($intAddressNotAccurateCounter) $strBusinessMsg = 'Accurate';
-								else $strBusinessMsg = 'Not Accurate';
-								
-								if ($intPhoneAccurateCounter) $strPhoneMsg = 'Accurate';
-								else $strPhoneMsg = 'Not Accurate';
-								
-								if ($intAddressAccurateCounter >= $intAddressNotAccurateCounter) $strAddressMsg = 'Accurate';
-								else $strAddressMsg = 'Not Accurate';
-                                
-                                $strHTML .= '
-                                        <div id="bname">Business Name: '.$returnBusinessName.' ('.$strBusinessMsg.')</div>
-                                        <div id="add">Address: '.$returnAddress.' ('.$strAddressMsg.')</div>
-                                        <div id="pnum">Phone Number: '.$returnPhoneNumber.' ('.$strPhoneMsg.')</div><br />
-                                ';                               
-                                
-                                #increment counter
-                                $intCounter++;
+								for ($i=0; $i<=$intCountAddComponent; $i++) {
+									$strType = $arrResultFindPlaceDetail['result']['address_components'][$i]['types'];
+									
+									switch ($strType) {
+										case "locality":
+											$returnCityLong  = $arrResultFindPlaceDetail['result']['address_components'][$i]['long_name'];
+											$returnCityShort = $arrResultFindPlaceDetail['result']['address_components'][$i]['short_name'];
+											if ($this->stringMatching(strtolower($returnCityLong),strtolower($this->city))){
+												$intAddressAccurateCounter += 1;
+											} elseif($this->stringMatching(strtolower($returnCityShort),strtolower($this->city))){
+												$intAddressAccurateCounter += 1;
+											} else {
+												$intAddressNotAccurateCounter += 1;
+											}												
+										break;
+										
+										case "administrative_area_level_1";
+											$returnStateLong  = $arrResultFindPlaceDetail['result']['address_components'][$i]['long_name'];
+											$returnStateShort = $arrResultFindPlaceDetail['result']['address_components'][$i]['short_name'];
+											
+											if ($this->stringMatching(strtolower($returnStateLong),strtolower($this->state))){
+												$intAddressAccurateCounter += 1;
+											} elseif($this->stringMatching(strtolower($returnStateShort),strtolower($this->state))){
+												$intAddressAccurateCounter += 1;
+											} else {
+												$intAddressNotAccurateCounter += 1;
+											}
+										break;
+										
+										case "postal_code":
+											$returnZipLong  = $arrResultFindPlaceDetail['result']['address_components'][$i]['long_name'];
+											$returnZipShort = $arrResultFindPlaceDetail['result']['address_components'][$i]['short_name'];
+											
+											if ($this->stringMatching(strtolower($returnZipLong),strtolower($this->zip))){
+												$intAddressAccurateCounter += 1;
+											} elseif($this->stringMatching(strtolower($returnZipShort),strtolower($this->zip))){
+												$intAddressAccurateCounter += 1;
+											} else {
+												$intAddressNotAccurateCounter += 1;
+											}
+										break;										
+									}
+								}
+							} else {
+								$intAddressNotAccurateCounter = 2;
+							}
+														
+							if($returnPhoneNumber == $this->phoneNo){
+								$intPhoneAccurateCounter = 1;
+							}else{
+								$intPhoneAccurateCounter = 0;
+							}
+							
+							if ($intAddressNotAccurateCounter) $strBusinessMsg = 'Accurate';
+							else $strBusinessMsg = 'Not Accurate';
+							
+							if ($intPhoneAccurateCounter) $strPhoneMsg = 'Accurate';
+							else $strPhoneMsg = 'Not Accurate';
+							
+							if ($intAddressAccurateCounter >= $intAddressNotAccurateCounter) $strAddressMsg = 'Accurate';
+							else $strAddressMsg = 'Not Accurate';
+							
+							$strHTML .= '
+									<div id="bname">Business Name: '.$returnBusinessName.' ('.$strBusinessMsg.')</div>
+									<div id="add">Address: '.$returnAddress.' ('.$strAddressMsg.')</div>
+									<div id="pnum">Phone Number: '.$returnPhoneNumber.' ('.$strPhoneMsg.')</div><br />
+							';                               
+							
+							#increment counter
+							$intCounter++;
                         }
                         
                         $arrHTML = array('HTML' => $strHTML);
